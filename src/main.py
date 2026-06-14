@@ -6,11 +6,10 @@ from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from data_crawler_api import __version__
-from data_crawler_api.api.routes import router
-from data_crawler_api.api.steam_api import router as steam_router
-from data_crawler_api.config import get_settings
-from data_crawler_api.db import close_pool
+from api.routes import router
+from api.steam_api import router as steam_router
+from config import get_settings
+from db import close_pool
 
 
 @asynccontextmanager
@@ -59,7 +58,7 @@ if __name__ == "__main__":
 
     settings = get_settings()
     uvicorn.run(
-        "data_crawler_api.main:app",
+        "main:app",
         host=settings.host,
         port=settings.port,
         reload=settings.debug,

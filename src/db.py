@@ -2,7 +2,7 @@
 
 import aiomysql
 
-from data_crawler_api.config import get_settings
+from config import get_settings
 
 _pool: aiomysql.Pool | None = None
 
@@ -26,7 +26,7 @@ async def get_pool() -> aiomysql.Pool:
         pool_recycle=settings.mysql_pool_recycle,
         maxsize=settings.mysql_pool_size,
         autocommit=True,
-        charset="utf8mb4",
+        charset=settings.mysql_charset,
     )
     return _pool
 

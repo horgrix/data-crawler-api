@@ -5,8 +5,8 @@ from datetime import datetime, timedelta, timezone
 import aiomysql
 from fastapi import APIRouter, Query
 
-from data_crawler_api.db import get_pool
-from data_crawler_api.models.schemas import (
+from db import get_pool
+from models.schemas import (
     PlayersType,
     RecommendationsType,
     RegionRankType,

@@ -27,7 +27,7 @@
 
 ```bash
 # 创建虚拟环境
-python -m venv venv
+python -m venv .venv
 
 # 激活虚拟环境
 # Windows:
@@ -66,15 +66,9 @@ data-crawler-api/
 │       ├── api/
 │       │   ├── __init__.py
 │       │   └── routes.py    # API 路由
-│       ├── crawlers/
-│       │   ├── __init__.py
-│       │   └── base.py      # 爬虫基类
 │       └── models/
 │           ├── __init__.py
 │           └── schemas.py   # Pydantic 模型
-├── tests/
-│   ├── __init__.py
-│   └── test_main.py
 ├── pyproject.toml
 ├── .gitignore
 └── README.md

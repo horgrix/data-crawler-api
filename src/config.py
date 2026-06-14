@@ -1,9 +1,9 @@
 """应用配置管理模块."""
+import os
 
 from functools import lru_cache
-
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
 
 class Settings(BaseSettings):
     """应用配置."""
@@ -35,11 +35,12 @@ class Settings(BaseSettings):
     concurrency_limit: int = 5
 
     # MySQL
-    mysql_host: str = "127.0.0.1"
-    mysql_port: int = 3306
-    mysql_user: str = "root"
-    mysql_password: str = ""
-    mysql_database: str = "steam"
+    mysql_host: str = Field(..., alias="DB_HOST")
+    mysql_port: int = Field(..., alias="DB_PORT")
+    mysql_user: str = Field(..., alias="DB_USER")
+    mysql_password: str = Field(..., alias="DB_PASSWORD")
+    mysql_database: str = Field(..., alias="DB_DATABASE")
+    mysql_charset: str = Field(..., alias="DB_CHARSET")
     mysql_pool_size: int = 10
     mysql_pool_recycle: int = 3600
 
