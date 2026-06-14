@@ -8,7 +8,7 @@ set -e
 
 PROJECT_DIR="/home/ubuntu/projects/data-crawler/data-crawler-api"
 GIT_URL="https://github.com/horgrix/data-crawler-api.git"
-NGINX_CONF="/etc/nginx/conf.d/horgrix.conf"
+NGINX_CONF="/etc/nginx/conf.d/data-crawler-api.conf"
 SERVICE_NAME="data-crawler-api"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 
