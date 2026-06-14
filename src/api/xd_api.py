@@ -152,74 +152,43 @@ async def query_xd_torchlight_seasons_steam_players(
 
     # 收集所有赛季时间范围内的 stat_ts 条件
     pool = await get_pool()
-    all_rows: list[dict] = []
-
+    # 组装结果
+    results: list[dict] = []
+    
     async with pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
             for ss, start_date, end_date in season_ranges:
-                start_ts = _date_str_to_utc_ts(start_date)
-                end_ts_inclusive = _date_str_to_utc_ts(end_date) + 86399
+                start_ts = _date_str_to_utc_ts(start_date) * 1000
+                end_ts_inclusive = (_date_str_to_utc_ts(end_date) + 86399) * 1000
                 season_start_ts = start_ts  # 用于计算 ss_day
 
                 await cur.execute(
                     """
-                    SELECT stat_ts, steam_id, peak_players
-                    FROM xd_game_steam_players
-                    WHERE steam_id = %s
-                      AND stat_ts >= %s
-                      AND stat_ts <= %s
-                    ORDER BY stat_ts ASC
+                    SELECT 
+                        a.ss, 
+                        a.ss_day, 
+                        a.steam_id,
+                        MAX(a.peak_players) as peak_players
+                    FROM(
+                        SELECT 
+                            stat_ts, 
+                            steam_id, 
+                            peak_players,
+                            %s as ss,
+                            (stat_ts - %s) DIV 86400000 + 1  as ss_day
+                        FROM 
+                            xd_game_steam_players
+                        WHERE steam_id = %s
+                        AND stat_ts >= %s
+                        AND stat_ts <= %s
+                    ) a
+                    GROUP BY
+                        a.ss, a.ss_day, a.steam_id
                     """,
-                    (steam_id, start_ts, end_ts_inclusive),
+                    (ss, season_start_ts, steam_id, start_ts, end_ts_inclusive),
                 )
                 rows = await cur.fetchall()
-
                 for row in rows:
-                    # 计算 ss_day: 第1天 = 1
-                    days_diff = (row["stat_ts"] - season_start_ts) // 86400 + 1
-                    all_rows.append({
-                        "ss": ss,
-                        "ss_day": max(days_diff, 1),
-                        "steam_id": row["steam_id"],
-                        "peak_players": row["peak_players"],
-                    })
+                    results.append(row)
 
-    # Group by (ss, ss_day, steam_id) 取 MAX(peak_players)
-    groups: dict[tuple[int, int, int], int] = {}
-    for row in all_rows:
-        key = (row["ss"], row["ss_day"], row["steam_id"])
-        if key not in groups or row["peak_players"] > groups[key]:
-            groups[key] = row["peak_players"]
-
-    # 组装结果
-    results: list[dict] = []
-    for (ss, ss_day, sid), peak in groups.items():
-        results.append({
-            "ss": ss,
-            "ss_day": ss_day,
-            "steam_id": sid,
-            "peak_players": peak,
-        })
     return results
-
-
-# ==================== query_region_code_name_mapping ====================
-
-
-@router.get("/region_mapping", summary="查询区域代码名称映射")
-async def query_region_code_name_mapping() -> list[dict]:
-    """查询所有 Steam 区域代码与名称的映射（缓存 1 小时）."""
-    cache_key = "xd_region_mapping"
-    cached = _cache_get(cache_key)
-    if cached is not None:
-        return cached
-
-    pool = await get_pool()
-    async with pool.acquire() as conn:
-        async with conn.cursor(aiomysql.DictCursor) as cur:
-            await cur.execute("SELECT code, name FROM steam_region_kv")
-            rows = await cur.fetchall()
-
-    result = [{"code": row["code"], "name": row["name"]} for row in rows]
-    _cache_set(cache_key, result)
-    return result
