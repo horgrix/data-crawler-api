@@ -34,6 +34,15 @@ class Settings(BaseSettings):
     )
     concurrency_limit: int = 5
 
+    # MySQL
+    mysql_host: str = "127.0.0.1"
+    mysql_port: int = 3306
+    mysql_user: str = "root"
+    mysql_password: str = ""
+    mysql_database: str = "steam"
+    mysql_pool_size: int = 10
+    mysql_pool_recycle: int = 3600
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -8,7 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from data_crawler_api import __version__
 from data_crawler_api.api.routes import router
+from data_crawler_api.api.steam_api import router as steam_router
 from data_crawler_api.config import get_settings
+from data_crawler_api.db import close_pool
 
 
 @asynccontextmanager
@@ -17,6 +19,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
     app.state.settings = settings
     yield
+    await close_pool()
 
 
 def create_app() -> FastAPI:
@@ -41,6 +44,9 @@ def create_app() -> FastAPI:
 
     # 注册路由
     app.include_router(router, prefix="/api/v1")
+
+    # 注册 Steam 路由
+    app.include_router(steam_router, prefix="/api/v1")
 
     return app
 
