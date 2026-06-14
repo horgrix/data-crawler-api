@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.routes import router
 from api.steam_api import router as steam_router
+from api.xd_api import router as xd_router
 from config import get_settings
 from db import close_pool
 
@@ -46,6 +47,9 @@ def create_app() -> FastAPI:
 
     # 注册 Steam 路由
     app.include_router(steam_router, prefix="/api/v1")
+
+    # 注册 XD 路由
+    app.include_router(xd_router, prefix="/api/v1")
 
     return app
 
