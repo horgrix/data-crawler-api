@@ -50,15 +50,9 @@ def utc_ts_to_beijing_date_with_hour_str(ts: int | float) -> str:
 
 @router.get("/region_rank", summary="查询 Steam 地区排名")
 async def query_region_rank(
-    start_date: str = Query(..., pattern=r"^\d{8}$", description="开始日期 yyyymmdd"),
-    end_date: str = Query(..., pattern=r"^\d{8}$", description="结束日期 yyyymmdd"),
     steam_id: int = Query(..., ge=0, description="Steam ID"),
     type: RegionRankType = Query(..., description="时间类型：hourly | weekly"),
 ) -> list[dict]:
-    """查询指定游戏的 Steam 地区排名."""
-    start_ts = date_str_to_utc_ts(start_date) * 1000
-    # 结束日期包含当天全天（次日 00:00:00 的前一秒）
-    end_ts_inclusive = (date_str_to_utc_ts(end_date) + 86399) * 1000
 
     pool = await get_pool()
     async with pool.acquire() as conn:
@@ -69,11 +63,10 @@ async def query_region_rank(
                     SELECT stat_ts, steam_id, `rank`, region
                     FROM xd_game_steam_rt_hotlist
                     WHERE steam_id = %s
-                      AND stat_ts >= %s
-                      AND stat_ts <= %s
                     ORDER BY stat_ts ASC
+                    LIMIT 24
                     """,
-                    (steam_id, start_ts, end_ts_inclusive),
+                    (steam_id),
                 )
             else:
                 await cur.execute(
@@ -81,11 +74,10 @@ async def query_region_rank(
                     SELECT start_ts, steam_id, `rank`, region
                     FROM xd_game_steam_weekly_hot_list
                     WHERE steam_id = %s
-                      AND start_ts >= %s
-                      AND start_ts <= %s
                     ORDER BY start_ts ASC
+                    LIMIT 27
                     """,
-                    (steam_id, start_ts, end_ts_inclusive),
+                    (steam_id),
                 )
             rows = await cur.fetchall()
 
