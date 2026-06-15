@@ -115,8 +115,8 @@ async def query_players(
     type: PlayersType = Query(..., description="时间类型：monthly | daily | hourly"),
 ) -> list[dict]:
     """查询指定游戏的 Steam 玩家峰值数据."""
-    start_ts = date_str_to_utc_ts(start_date)
-    end_ts_inclusive = date_str_to_utc_ts(end_date) + 86399
+    start_ts = date_str_to_utc_ts(start_date)  * 1000
+    end_ts_inclusive = (date_str_to_utc_ts(end_date) + 86399) * 1000
 
     pool = await get_pool()
     async with pool.acquire() as conn:
@@ -138,7 +138,7 @@ async def query_players(
     results: list[dict] = []
     for row in rows:
         results.append({
-            "stat_date": utc_ts_to_beijing_date_str(row["stat_ts"]),
+            "stat_date": utc_ts_to_beijing_date_str(row["stat_ts"] / 1000),
             "steam_id": row["steam_id"],
             "peak_players": row["peak_players"],
         })
@@ -156,8 +156,8 @@ async def query_recommendations(
     type: RecommendationsType = Query(..., description="类型：rollup | recent"),
 ) -> list[dict]:
     """查询指定游戏的 Steam 推荐评价数据（含推荐率）."""
-    start_ts = date_str_to_utc_ts(start_date)
-    end_ts_inclusive = date_str_to_utc_ts(end_date) + 86399
+    start_ts = date_str_to_utc_ts(start_date) * 1000
+    end_ts_inclusive = (date_str_to_utc_ts(end_date) + 86399) * 1000 
 
     pool = await get_pool()
     async with pool.acquire() as conn:
@@ -181,7 +181,7 @@ async def query_recommendations(
         total = row["all"]
         rate = round(row["up"] / total, 2) if total > 0 else 0.0
         results.append({
-            "stat_date": utc_ts_to_beijing_date_str(row["stat_ts"]),
+            "stat_date": utc_ts_to_beijing_date_str(row["stat_ts"] / 1000),
             "type": row["type"],
             "steam_id": row["steam_id"],
             "up": row["up"],
