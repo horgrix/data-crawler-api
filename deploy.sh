@@ -24,7 +24,7 @@ echo "[1/6] 获取代码..."
 if [ -d "$PROJECT_DIR/.git" ]; then
     echo "  代码库已存在，执行 git pull..."
     cd "$PROJECT_DIR"
-    git pull origin main
+    git pull origin master
 else
     echo "  克隆代码库..."
     mkdir -p "$(dirname "$PROJECT_DIR")"
