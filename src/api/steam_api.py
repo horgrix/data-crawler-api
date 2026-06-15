@@ -60,22 +60,28 @@ async def query_region_rank(
             if type == RegionRankType.HOURLY:
                 await cur.execute(
                     """
-                    SELECT stat_ts, steam_id, `rank`, region
-                    FROM xd_game_steam_rt_hotlist
-                    WHERE steam_id = %s
-                    ORDER BY stat_ts ASC
-                    LIMIT 24
+                    SELECT a.stat_ts, a.steam_id, a.`rank`, a.region
+                    FROM(
+                        SELECT stat_ts, steam_id, `rank`, region,
+                            ROW_NUMBER() OVER (PARTITION BY region ORDER BY stat_ts DESC) AS rn
+                        FROM xd_game_steam_rt_hotlist
+                        WHERE steam_id = %s
+                    ) a
+                    WHERE a.rn < 24
                     """,
                     (steam_id),
                 )
             else:
                 await cur.execute(
                     """
-                    SELECT start_ts, steam_id, `rank`, region
-                    FROM xd_game_steam_weekly_hot_list
-                    WHERE steam_id = %s
-                    ORDER BY start_ts ASC
-                    LIMIT 27
+                    SELECT a.start_ts, a.steam_id, a.`rank`, a.region
+                    FROM(
+                        SELECT start_ts, steam_id, `rank`, region,
+                            ROW_NUMBER() OVER (PARTITION BY region ORDER BY start_ts DESC) AS rn
+                        FROM xd_game_steam_weekly_hot_list
+                        WHERE steam_id = %s
+                    ) a
+                    WHERE a.rn < 27
                     """,
                     (steam_id),
                 )
