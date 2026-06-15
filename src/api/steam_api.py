@@ -38,6 +38,12 @@ def utc_ts_to_beijing_date_str(ts: int | float) -> str:
     dt_beijing = dt_utc.astimezone(TZ_BEIJING)
     return dt_beijing.strftime("%Y%m%d")
 
+def utc_ts_to_beijing_date_with_hour_str(ts: int | float) -> str:
+    """将 UTC 时间戳转换为北京时间 yyyymmdd 格式."""
+    dt_utc = datetime.fromtimestamp(ts, tz=TZ_UTC)
+    dt_beijing = dt_utc.astimezone(TZ_BEIJING)
+    return dt_beijing.strftime("%Y%m%d %H")
+
 
 # ==================== query_region_rank ====================
 
@@ -50,9 +56,9 @@ async def query_region_rank(
     type: RegionRankType = Query(..., description="时间类型：hourly | weekly"),
 ) -> list[dict]:
     """查询指定游戏的 Steam 地区排名."""
-    start_ts = date_str_to_utc_ts(start_date)
+    start_ts = date_str_to_utc_ts(start_date) * 1000
     # 结束日期包含当天全天（次日 00:00:00 的前一秒）
-    end_ts_inclusive = date_str_to_utc_ts(end_date) + 86399
+    end_ts_inclusive = (date_str_to_utc_ts(end_date) + 86399) * 1000
 
     pool = await get_pool()
     async with pool.acquire() as conn:
@@ -86,8 +92,11 @@ async def query_region_rank(
     results: list[dict] = []
     for row in rows:
         ts = row.get("stat_ts") or row.get("start_ts")
+        stat_date = utc_ts_to_beijing_date_str(ts / 1000)
+        if type == RegionRankType.HOURLY:
+            stat_date = utc_ts_to_beijing_date_with_hour_str(ts / 1000)
         results.append({
-            "stat_date": utc_ts_to_beijing_date_str(ts),
+            "stat_date": stat_date,
             "steam_id": row["steam_id"],
             "rank": row["rank"],
             "region": row["region"],
