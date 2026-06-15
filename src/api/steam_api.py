@@ -104,18 +104,18 @@ async def query_region_rank(
 
 # ==================== query_players ====================
 
+def rows_to_dict(rows) -> list[dict]:
+    return [
+        [
+            r["stat_ts"], r["peak_players"]
+        ]
+        for r in rows
+    ]
 
 @router.get("/players", summary="查询 Steam 玩家数据")
 async def query_players(
-    start_date: str = Query(..., pattern=r"^\d{8}$", description="开始日期 yyyymmdd"),
-    end_date: str = Query(..., pattern=r"^\d{8}$", description="结束日期 yyyymmdd"),
     steam_id: int = Query(..., ge=0, description="Steam ID"),
-    type: PlayersType = Query(..., description="时间类型：monthly | daily | hourly"),
-) -> list[dict]:
-    """查询指定游戏的 Steam 玩家峰值数据."""
-    start_ts = date_str_to_utc_ts(start_date)  * 1000
-    end_ts_inclusive = (date_str_to_utc_ts(end_date) + 86399) * 1000
-
+) -> list:
     pool = await get_pool()
     async with pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
@@ -124,22 +124,43 @@ async def query_players(
                 SELECT stat_ts, steam_id, peak_players
                 FROM xd_game_steam_players
                 WHERE steam_id = %s
-                  AND type = %s
-                  AND stat_ts >= %s
-                  AND stat_ts <= %s
-                ORDER BY stat_ts ASC
+                AND type = %s
+                ORDER BY stat_ts DESC
+                LIMIT 720
                 """,
-                (steam_id, type.value, start_ts, end_ts_inclusive),
+                (steam_id, PlayersType.HOURLY.value),
             )
-            rows = await cur.fetchall()
+            hourly_rows = await cur.fetchall()
 
-    results: list[dict] = []
-    for row in rows:
-        results.append({
-            "stat_date": utc_ts_to_beijing_date_str(row["stat_ts"] / 1000),
-            "steam_id": row["steam_id"],
-            "peak_players": row["peak_players"],
-        })
+            await cur.execute(
+                """
+                SELECT stat_ts, steam_id, peak_players
+                FROM xd_game_steam_players
+                WHERE steam_id = %s
+                AND type = %s
+                ORDER BY stat_ts DESC
+                LIMIT 60
+                """,
+                (steam_id, PlayersType.DAILY.value),
+            )
+            daily_rows = await cur.fetchall()
+
+            await cur.execute(
+                """
+                SELECT stat_ts, steam_id, peak_players
+                FROM xd_game_steam_players
+                WHERE steam_id = %s
+                AND type = %s
+                ORDER BY stat_ts DESC
+                """,
+                (steam_id, PlayersType.MONTHLY.value),
+            )
+            monthly_rows = await cur.fetchall()
+
+    results: list = []
+    results.extend(rows_to_dict(hourly_rows))
+    results.extend(rows_to_dict(daily_rows))
+    results.extend(rows_to_dict(monthly_rows))
     return results
 
 
